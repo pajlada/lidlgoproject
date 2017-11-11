@@ -11,7 +11,7 @@ import (
 	twitch "github.com/gempir/go-twitch-irc"
 )
 
-var api = gotwitch.New(os.GetEnv("CLIENT_ID"))
+var api = gotwitch.New(os.Getenv("CLIENT_ID"))
 
 // RecordKeeper xD
 type RecordKeeper struct {
