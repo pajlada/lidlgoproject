@@ -1,0 +1,7 @@
+package: github.com/pajlada/lidlgoproject
+
+import:
+- package: github.com/dankeroni/gotwitch
+  version: helix
+
+- package: github.com/gempir/go-twitch-irc

@@ -1,0 +1,10 @@
+hash: 4c4df23569a4b6fe51a9bbf1001c8f756a6e42703a76de6134f42a66e1939b9e
+updated: 2017-11-11T13:19:00.0871372+01:00
+imports:
+- name: github.com/dankeroni/gotwitch
+  version: c7221015253bf2ca50c8fd1cc5f584098d17c7b5
+- name: github.com/dankeroni/jsonapi
+  version: 7aa17e21f3231f66a63c9be3c86bccc5e2a22cd1
+- name: github.com/gempir/go-twitch-irc
+  version: fe0f0c9e22a3decbfd392643cfde5d9f4e09bac3
+testImports: []
