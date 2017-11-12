@@ -96,10 +96,34 @@ func (r *EmoteRecord) IncrementCounter(channelName string) {
 	})
 }
 
+type channelStats struct {
+	ChannelName string
+
+	EmoteCount int
+}
+
+type emoteStats struct {
+	EmoteName string
+
+	// Total usage of the emote in the last 60 seconds
+	EmoteCount int
+
+	// Participating channels
+	Channels []channelStats
+}
+
+// Stats xD
+type Stats struct {
+	EmoteStats []emoteStats
+}
+
 func printStats() {
 	for _ = range time.Tick(2 * time.Second) {
+		stats := Stats{}
 		recordKeeper.mutex.Lock()
 		for emoteName, emoteRecord := range recordKeeper.Records {
+			emoteStat := emoteStats{}
+			emoteStat.EmoteName = emoteName
 			emoteRecord.mutex.Lock()
 			if len(emoteRecord.channelEmoteCount) == 0 {
 				emoteRecord.mutex.Unlock()
@@ -108,15 +132,41 @@ func printStats() {
 			sorted := sortedResults(emoteRecord.channelEmoteCount)
 			emoteRecord.mutex.Unlock()
 			// fmt.Printf("Current record for %s is %#v\n", emoteName, emoteRecord)
-			for i, channel := range sorted {
-				fmt.Printf("#%d: %s with %d %s\n", i+1, channel.Key, channel.Value, emoteName)
+			for _, channel := range sorted {
+				channelStat := channelStats{}
+				channelStat.ChannelName = channel.Key
+				channelStat.EmoteCount = channel.Value
+
+				emoteStat.EmoteCount += channelStat.EmoteCount
+
+				emoteStat.Channels = append(emoteStat.Channels, channelStat)
 			}
-			fmt.Println("+++++++++++++")
 			// Figure out which channel is in the lead
 			// Sort emote
+			stats.EmoteStats = append(stats.EmoteStats, emoteStat)
 		}
 		recordKeeper.mutex.Unlock()
-		fmt.Println("==========================")
+
+		sort.Slice(stats.EmoteStats, func(i, j int) bool {
+			// return stats.EmoteStats[i].Channels[0].EmoteCount < stats.EmoteStats[j].Channels[0].EmoteCount
+			return stats.EmoteStats[i].EmoteCount > stats.EmoteStats[j].EmoteCount
+		})
+
+		fmt.Print("\033[2J")
+		for emoteRank, emote := range stats.EmoteStats {
+			fmt.Printf("Emote %s stats(%d):\n", emote.EmoteName, emote.EmoteCount)
+			for channelRank, channel := range emote.Channels {
+				fmt.Printf("#%d: %s with %d emotes\n", channelRank+1, channel.ChannelName, channel.EmoteCount)
+				if channelRank >= 2 {
+					break
+				}
+			}
+			fmt.Println("")
+
+			if emoteRank >= 4 {
+				break
+			}
+		}
 	}
 }
 
@@ -130,20 +180,16 @@ func main() {
 	client := twitch.NewClient("justinfan123123", "oauth:123123123")
 
 	client.OnNewMessage(func(channelName string, user twitch.User, message twitch.Message) {
-		// fmt.Printf("%s: %s\n", user.DisplayName, message.Text)
+		// TODO: Parse BTTV emotes, FFZ emotes, and Emojis here
 		if len(message.Emotes) == 0 {
 			// Ignore messages with no emotes
 			return
 		}
 
-		// Allocate channel if we haven't already
-		firstEmote := message.Emotes[0]
-		emoteRecord := recordKeeper.GetEmoteRecord(firstEmote.Name)
-		emoteRecord.IncrementCounter(channelName)
+		recordKeeper.GetEmoteRecord(message.Emotes[0].Name).IncrementCounter(channelName)
 	})
 
 	api.GetStreams(func(streams []gotwitch.Stream) {
-		// fmt.Printf("XD: %#v\n", ret)
 		userIDs := []string{}
 		for _, stream := range streams {
 			userIDs = append(userIDs, stream.UserID)
